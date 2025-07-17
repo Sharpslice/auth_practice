@@ -41,6 +41,10 @@ app.post('/sign-up',async(req,res,next)=>{
     }
     
 })
+app.get('/log-in',(req,res)=>{
+    res.render('log-in-form')
+})
+app.post('/log-in',passport.authenticate("local",{successRedirect:"/",failureRedirect:"/"}))
 
 passport.use(new localStrategy(async(username,password,done)=>{
     try{
