@@ -4,6 +4,7 @@ const express = require("express");
 const session = require('express-session');
 const passport = require('passport');
 const localStrategy = require('passport-local').Strategy;
+const bcrypt = require('bcryptjs')
 require('dotenv').config()
 const pool = new Pool({
     user: process.env.DB_USER,
@@ -30,11 +31,12 @@ app.get('/sign-up',(req,res)=>{
 })
 app.post('/sign-up',async(req,res,next)=>{
     const {username,password} = req.body
+    const hashedPassword = await bcrypt.hash(password,10)
     try{
         await pool.query(`
             INSERT INTO users (username,password) 
             VALUES ($1,$2)
-        `,[username,password]);
+        `,[username,hashedPassword]);
         res.redirect('/')
 
     }catch(err){
@@ -54,7 +56,7 @@ app.get('/log-out',(req,res,next)=>{
         res.redirect('/')
     })
 })
-app.post('/log-in',passport.authenticate("local",{successRedirect:"/",failureRedirect:"/sign-up"}))
+app.post('/log-in',passport.authenticate("local",{successRedirect:"/",failureRedirect:"/"}))
 
 passport.use(new localStrategy(async(username,password,done)=>{
     try{
@@ -66,7 +68,8 @@ passport.use(new localStrategy(async(username,password,done)=>{
         if(!user){
             return done(null,false,{message: 'Incorrect Username'})
         }
-        if(user.password !== password){
+        const match = await bcrypt.compare(user.password,password)
+        if(match){
             return done(null,false,{message: 'Incorrect Password'});
         }
         return done(null,user)
