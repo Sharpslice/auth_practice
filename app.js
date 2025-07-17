@@ -18,11 +18,12 @@ app.set('views',path.join(__dirname,'views'))
 app.set('view engine','ejs');
 
 app.use(session({secret: 'cats',resave:false,saveUninitialized:false}));
+
 app.use(passport.session());
 app.use(express.urlencoded({extended:false}))
 
 app.get('/',(req,res)=>{
-    res.render('index')
+    res.render('index', {user:req.user})
 })
 app.get('/sign-up',(req,res)=>{
     res.render('sign-up-form')
@@ -42,9 +43,18 @@ app.post('/sign-up',async(req,res,next)=>{
     
 })
 app.get('/log-in',(req,res)=>{
+    console.log('switching to log-in page')
     res.render('log-in-form')
 })
-app.post('/log-in',passport.authenticate("local",{successRedirect:"/",failureRedirect:"/"}))
+app.get('/log-out',(req,res,next)=>{
+    req.logout((err)=>{
+        if(err){
+            return next(err);
+        }
+        res.redirect('/')
+    })
+})
+app.post('/log-in',passport.authenticate("local",{successRedirect:"/",failureRedirect:"/sign-up"}))
 
 passport.use(new localStrategy(async(username,password,done)=>{
     try{
